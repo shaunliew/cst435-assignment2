@@ -55,28 +55,46 @@ newgrp docker
 sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 
+
+## Docker Command
+
+list out the container
+`docker ps`
+list out the connected node
+`docker node ls`
+check the status of your services
+`docker stack services hadoop-stack`
+delete the unused container
+`docker container prune`
+stop the container
+`docker stop <container-id>`
+delete the unused volume
+`docker volume prune`
+remove the whole stack
+`docker stack rm hadoop-stack`
+
 ## Docker Swarm for multi computer communication
 
-1) Check your <manager-node-ip>
-using hostname -I in linux
-or ipconfig in windows
+1) Check your <manager-node-ip> and initialize the docker swarm
+using `hostname -I in linux`
+or `ipconfig in windows`
 
-docker swarm init --advertise-addr 192.168.100.19
+`sudo docker swarm init --advertise-addr 192.168.100.19`
 
 2) To add a worker to this swarm, run the following command:
-    docker swarm join --token <token-generated>
+    `docker swarm join --token <token-generated>`
 
 3) go to your other computer/ VM terminal and run the code above to join the node.
 
 4) Deploy your services to the swarm at your manager node(main computer)
-docker stack deploy -c docker-compose.yaml hadoop-stack
+`docker stack deploy -c docker-compose.yaml hadoop-stack`
 
 5) go to your docktor desktop and find the name of the main namenode and exec it
-docker exec -it <docker-stack-namenode-name> /bin/bash
+`docker exec -it <docker-stack-namenode-name> /bin/bash`
 
 6) run the mapreduce code
 
-yarn jar share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.6.jar pi 10 15
+`yarn jar share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.6.jar pi 10 15`
 
 7) Compare the result before and after using multinode
 
@@ -84,7 +102,17 @@ yarn jar share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.6.jar pi 10 15
 
 1) Run the code below if you cannot join the swarm in VM/ other computers
 sudo apt install firewalld
-sudo firewall-cmd --add-port=2377/tcp                       ─╯
-sudo firewall-cmd --runtime-to-permanent
+sudo firewall-cmd --add-port=2376/tcp --permanent  
+sudo firewall-cmd --add-port=2377/tcp --permanent  
+sudo firewall-cmd --add-port=7946/tcp --permanent  
+sudo firewall-cmd --add-port=7946/udp --permanent  
+sudo firewall-cmd --add-port=4789/udp --permanent
+sudo systemctl restart firewalld
+sudo firewall-cmd --zone=public --add-port=2377/tcp --permanent
 sudo firewall-cmd --reload
+sudo ufw enable
+sudo ufw allow 2376
+sudo ufw allow 2377
+sudo ufw allow 7946
+sudo ufw allow 4789
 systemctl reboot -i

@@ -235,21 +235,28 @@ Estimated value of Pi is 3.14160000000000000000
 ## Useful Docker Command
 
 list out the container
-`docker ps`
+- `docker ps`
+
 list out the connected node
-`docker node ls`
+- `docker node ls`
+
 check the status of your services
-`docker stack services <stack-name>`
+- `docker stack services <stack-name>`
+
 delete the unused container
-`docker container prune`
+- `docker container prune`
+
 stop the container
-`docker stop <container-id>`
+- `docker stop <container-id>`
+
 delete the unused volume
-`docker volume prune`
+- `docker volume prune`
+
 remove the whole stack
-`docker stack rm hadoop-stack`
+- `docker stack rm hadoop-stack`
+
 check the condition of container
-`docker stats <container-name>`
+- `docker stats <container-name>`
 
 ## Reference
 

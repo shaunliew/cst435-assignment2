@@ -1,4 +1,4 @@
-
+version: '3.8'
 services:
    namenode:
       image: apache/hadoop:3
@@ -10,11 +10,25 @@ services:
         - ./config
       environment:
           ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"
+      deploy:
+        replicas: 1
+        restart_policy:
+          condition: on-failure
+      networks:
+        - hadoop
+
    datanode:
       image: apache/hadoop:3
       command: ["hdfs", "datanode"]
       env_file:
-        - ./config      
+        - ./config
+      deploy:
+        replicas: 1
+        restart_policy:
+          condition: on-failure
+      networks:
+        - hadoop
+
    resourcemanager:
       image: apache/hadoop:3
       hostname: resourcemanager
@@ -25,8 +39,24 @@ services:
         - ./config
       volumes:
         - ./test.sh:/opt/test.sh
+      deploy:
+        replicas: 1
+        restart_policy:
+          condition: on-failure
+      networks:
+        - hadoop
+
    nodemanager:
       image: apache/hadoop:3
       command: ["yarn", "nodemanager"]
       env_file:
         - ./config
+      deploy:
+        replicas: 1
+        restart_policy:
+          condition: on-failure
+      networks:
+        - hadoop
+
+networks:
+  hadoop:

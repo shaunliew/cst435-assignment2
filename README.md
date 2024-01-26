@@ -155,6 +155,14 @@ yarn jar share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.6.jar pi 10 15
 
 note: You can change the value of 10 and 15 accordingly.
 
+### Shut Down the Swarm
+After you have run all the codes successfully, make sure you shut down your swarm before creating a new swarm.
+
+```
+docker swarm leave (for worker node)
+docker swarm leave --force  (for manager node)
+```
+
 ### Issue Faced
 
 The code above have one problem which is it cannot connect to multicomputer as the network is unreachable.

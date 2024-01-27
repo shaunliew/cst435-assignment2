@@ -9,7 +9,7 @@ services:
       env_file:
         - ./config
       environment:
-          ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"
+          ENSURE_NAMENODE_DIR: "/opt/hadoop/dfs/name"
       deploy:
         replicas: 1
         restart_policy:
@@ -38,7 +38,7 @@ services:
       env_file:
         - ./config
       volumes:
-        - ./test.sh:/opt/test.sh
+        - ./test.sh:/opt/hadoop/test.sh
       deploy:
         replicas: 1
         restart_policy:

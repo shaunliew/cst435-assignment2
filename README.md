@@ -1,4 +1,4 @@
-# CST435 Assignment 2 - Hadoop Mapreduce Program in Docker Swarm
+# CST435 Assignment 2 - Distributed Hadoop cluster with Docker Swarm
 
 ## Team Members
 
@@ -15,10 +15,8 @@ Eng Jia Ying
 ### Software Installation needed
 
 1. Docker
-2. Multipass (for creating VM)
-3. Cloud Service (for creating VM)
-4. WSL2 (if using Windows)
-5. Another physical computer for worker node
+2. VMWare/Multipass (for creating VM)
+3. WSL2 (if using Windows)
 
 ### Clone the Project
 
@@ -29,6 +27,27 @@ git clone https://github.com/shaunliew/cst435-assignment2
 
 cd cst435-assignment2
 ```
+
+## Distribution Hadoop Cluster
+
+### Case 1: Single Computer Multi Nodes
+
+#### Install Docker 
+
+```
+sudo apt-get update
+sudo apt-get install apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+sudo apt-get update
+sudo apt-get install -y docker.io
+sudo usermod -aG docker $USER
+newgrp docker
+sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+```
+
+### Case 2: Multi Computer Multi Nodes
 
 ### Create VM using Multipass(optional if you are using multipass)
 
@@ -197,11 +216,6 @@ systemctl reboot -i
 
 Notes: the last command will restart your computer, make sure you save all of your works before run it.
 
-### Sudo Docker
-
-To solve the problem above, i use `sudo` command. Basically run the same thing as mentioned above just add `sudo` in front of all docker commands.
-This will solve the multicomputer connection problem. But it will bring to new problem which is `the namenode and resourcemanager container disappeared`. 
-
 Still pending to solve this problem.
 ### Result Comparison in one single computer but different number of datanode
 
@@ -240,34 +254,14 @@ Job Finished in 97.229 seconds
 Estimated value of Pi is 3.14160000000000000000
 ```
 
-## Useful Docker Command
-
-list out the container
-- `docker ps`
-
-list out the connected node
-- `docker node ls`
-
-check the status of your services
-- `docker stack services <stack-name>`
-
-delete the unused container
-- `docker container prune`
-
-stop the container
-- `docker stop <container-id>`
-
-delete the unused volume
-- `docker volume prune`
-
-remove the whole stack
-- `docker stack rm hadoop-stack`
-
-check the condition of container
-- `docker stats <container-name>`
-
 ## Reference
 
-docker image used for Hadoop: [Official Hadoop Docker Image](https://hub.docker.com/r/apache/hadoop)
+[Docker Swarm Official Docs](https://docs.docker.com/engine/swarm/)
 
-Docker Swarm: [Docker Swarm Official Docs](https://docs.docker.com/engine/swarm/)
+[Docker image used for Hadoop](https://hub.docker.com/r/newnius/hadoop)
+
+[GitHub Repo for Docker Image for Hadoop](https://github.com/newnius/Dockerfiles/tree/master/hadoop/2.7.4)
+
+[How to quickly setup a Hadoop cluster in Docker](https://blog.newnius.com/how-to-quickly-setup-a-hadoop-cluster-in-docker.html#Start-Hadoop-Cluster)
+
+[Setup a distributed Hadoop/HDFS cluster with docker](https://blog.newnius.com/setup-distributed-hadoop-cluster-with-docker-step-by-step.html)

@@ -16,6 +16,8 @@ services:
           condition: on-failure
       networks:
         - hadoop
+      volumes:
+        - /data:/var/lib/docker/volumes/f3d68f3bf8ec2a8cc8e11424d874946b4b6cd6a20af8c2670cf1d6032c58e1bb/_data
 
    datanode:
       image: apache/hadoop:3
@@ -28,6 +30,8 @@ services:
           condition: on-failure
       networks:
         - hadoop
+      volumes:
+        - /data:/var/lib/docker/volumes/f3d68f3bf8ec2a8cc8e11424d874946b4b6cd6a20af8c2670cf1d6032c58e1bb/_data
 
    resourcemanager:
       image: apache/hadoop:3
@@ -39,6 +43,7 @@ services:
         - ./config
       volumes:
         - ./test.sh:/opt/hadoop/test.sh
+        - /data:/var/lib/docker/volumes/f3d68f3bf8ec2a8cc8e11424d874946b4b6cd6a20af8c2670cf1d6032c58e1bb/_data
       deploy:
         replicas: 1
         restart_policy:
@@ -57,6 +62,8 @@ services:
           condition: on-failure
       networks:
         - hadoop
+      volumes:
+        - /data:/var/lib/docker/volumes/f3d68f3bf8ec2a8cc8e11424d874946b4b6cd6a20af8c2670cf1d6032c58e1bb/_data
 
 networks:
   hadoop:

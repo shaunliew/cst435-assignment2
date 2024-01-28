@@ -42,7 +42,7 @@ GitHub Repo for Docker Image: [newnius/Dockerfiles/hadoop/2.7.4](https://github.
 
 The Hadoop MapReduce use case that we chosen is `π Calculation`.
 
-Description from the Hadoop Official Website:
+Description from the [Hadoop Official Website](https://hadoop.apache.org/docs/current/api/org/apache/hadoop/examples/pi/package-summary.html):
 
 ```
 This package consists of a map/reduce application, distbbp, which computes exact binary digits of the mathematical constant π. distbbp is designed for computing the nth bit of π, for large n, say n > 100,000,000. For computing the lower bits of π, consider using bbp.
@@ -619,6 +619,8 @@ Estimated value of Pi is 3.14160000000000000000
 [Docker image used for Hadoop](https://hub.docker.com/r/newnius/hadoop)
 
 [GitHub Repo for Docker Image for Hadoop](https://github.com/newnius/Dockerfiles/tree/master/hadoop/2.7.4)
+
+[Hadoop MapReduce Pi calculation](https://hadoop.apache.org/docs/current/api/org/apache/hadoop/examples/pi/package-summary.html)
 
 [How to quickly setup a Hadoop cluster in Docker](https://blog.newnius.com/how-to-quickly-setup-a-hadoop-cluster-in-docker.html#Start-Hadoop-Cluster)
 

@@ -30,9 +30,32 @@ cd cst435-assignment2
 
 ## Distribution Hadoop Cluster
 
-### Case 1: Single Computer Multi Nodes
+### Dockerfile used
 
-#### Install Docker 
+For this project, we are using public Docker Image for Hadoop. Below is the details of the docker image that we used. 
+
+Docker Image: [newnius/hadoop](https://hub.docker.com/r/newnius/hadoop)
+
+GitHub Repo for Docker Image: [newnius/Dockerfiles/hadoop/2.7.4](https://github.com/newnius/Dockerfiles/tree/master/hadoop/2.7.4)
+
+### Hadoop MapReduce use case
+
+The Hadoop MapReduce use case that we chosen is `π Calculation`.
+
+Description from the Hadoop Official Website:
+
+```
+This package consists of a map/reduce application, distbbp, which computes exact binary digits of the mathematical constant π. distbbp is designed for computing the nth bit of π, for large n, say n > 100,000,000. For computing the lower bits of π, consider using bbp.
+```
+
+Command used for `π Calculation`:
+```
+bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.4.jar pi <number of map> <samples per map>
+```
+
+### prerequisites
+
+#### Install Docker
 
 ```
 sudo apt-get update
@@ -46,152 +69,149 @@ newgrp docker
 sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 ```
+
+### Case 1: Single Computer Multi Nodes
+
+For Case 1: we are using `1 Master Node` and `3 Slave Nodes`
+
+#### Initialize Docker Swarm and listens on localhost and create an overlay network
+
+```
+docker swarm init --advertise-addr 127.0.0.1
+
+docker network create --driver overlay swarm-net
+```
+
+#### Start Hadoop Cluster using the Public Hadoop Image
+
+##### Start Master Node
+
+```
+docker service create \
+	--name hadoop-master \
+	--network swarm-net \
+	--hostname hadoop-master \
+	--constraint node.role==manager \
+	--replicas 1 \
+	--endpoint-mode dnsrr \
+	newnius/hadoop:2.7.4
+```
+
+##### Start 3 Slave Nodes
+
+```
+docker service create \
+	--name hadoop-slave1 \
+	--network swarm-net \
+	--hostname hadoop-slave1 \
+	--replicas 1 \
+	--endpoint-mode dnsrr \
+	newnius/hadoop:2.7.4
+```
+
+```
+docker service create \
+	--name hadoop-slave2 \
+	--network swarm-net \
+	--hostname hadoop-slave2 \
+	--replicas 1 \
+	--endpoint-mode dnsrr \
+	newnius/hadoop:2.7.4
+```
+
+```
+docker service create \
+	--name hadoop-slave3 \
+	--network swarm-net \
+	--hostname hadoop-slave3 \
+	--replicas 1 \
+	--endpoint-mode dnsrr \
+	newnius/hadoop:2.7.4
+```
+
+#### Start a proxy to access Hadoop web UI
+
+```
+docker service create \
+	--replicas 1 \
+	--name proxy_docker \
+	--network swarm-net \
+	-p 7001:7001 \
+	newnius/docker-proxy
+```
+
+#### Run the MapReduce Program - π Calculation
+
+Execute following command to enter the `master node`
+
+```
+docker exec -it hadoop-master.1.$(docker service ps \
+hadoop-master --no-trunc | tail -n 1 | awk '{print $1}' ) bash
+```
+
+Now we will execute the following commands inside the master node
+
+##### Format master node for first time running
+
+```
+# stop all Hadoop processes
+sbin/stop-yarn.sh
+sbin/stop-dfs.sh
+
+# format namenode
+bin/hadoop namenode -format
+
+# start yarn and dfs nodes
+sbin/start-dfs.sh
+sbin/start-yarn.sh
+```
+
+##### Run the π Calculation
+
+```
+bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.4.jar pi 100 150
+```
+
+You should see the result after executing the command above.
 
 ### Case 2: Multi Computer Multi Nodes
 
-### Create VM using Multipass(optional if you are using multipass)
+#### Environment used
+We use 3 nodes(Virtual Machine) to deploy our Hadoop Cluster.
 
-#### Multipass to create VM and get into VM terminal
+| Hostname      | Alias | IP address      | Roles |
+| ----------- | ----------- |----------- | -----------|
+| tehtehv2-virtual-machine      | hadoop-node021| 192.168.100.90      | Name Node, Resource Manager       |
+| tehteh22v3-virtual-machine   | hadoop-node022 | 192.168.100.92 | Data Node, Secondary NameNode, Node Manager |
+| tehteh22v4-virtual-machine   | hadoop-node023 | 192.168.100.93  | Data Node, Node Manager|
 
-```
-multipass launch --name vm-name
-multipass shell vm-name
-```
+Notes: The alias means the hostname in the Hadoop cluster Due the limitation that we cannot have same (host)name in docker swarm and we may want to deploy other services on the same node, so we’d better choose another name.
 
-#### Install Docker into VM
+Make sure that all of these VM have install `Docker` as shown below.
 
-```
-sudo apt-get update
-sudo apt-get install apt-transport-https ca-certificates curl software-properties-common
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-sudo apt-get update
-sudo apt-get install -y docker.io
-sudo usermod -aG docker $USER
-newgrp docker
-sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-```
+#### Create a Docker Swarm 
 
-#### Delete VM
+We choose `tehtehv2-virtual-machine` as the `manager` for Docker Swarm. Initialize the Docker Swarm on `tehtehv2-virtual-machine` and create an overlay network.
 
 ```
-multipass delete vm-name
-multipass purge
+docker swarm init --listen-addr 192.168.100.90
+docker network create --driver overlay hadoop-net
 ```
 
-### Docker Swarm Setup for multi-computer communication
-
-1) Check your <manager-node-ip> for docker swarm initialization
-
-    using `hostname -I`  in linux
-
-    or `ipconfig`  in windows
-
-    Example: `192.168.100.19`
-
-2) Initialize the docker swarm
-
-`docker swarm init --advertise-addr <host-ip-address>`
-
-
-the output:
-
-```                                                  ─╯
-Swarm initialized: current node (klowy9df6t62jbikdpw3szb2h) is now a manager.
-
-To add a worker to this swarm, run the following command:
-
-    docker swarm join --token <token-generated> <host-ip-address>:2377
-
-To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
+output
+```
+docker swarm join --token SWMTKN-1-5f4g4cbo8fdldw98a3hmhf8s12qe6ffx6s2sbluyyihpp5m3bg-eaia06w7v6w1z0ezon5dg61ac 192.168.100.90:2377
 ```
 
-2) Use the output given from the swarm initialization to add the worker-node from VM/another computer. Run the command above at different machines. 
+##### add other VM as worker nodes
+
+use the output from docker swarm join to join as work nodes on other VMs. 
 
 ```
-docker swarm join --token <token-generated> <host-ip-address>:2377
+docker swarm join --token SWMTKN-1-5f4g4cbo8fdldw98a3hmhf8s12qe6ffx6s2sbluyyihpp5m3bg-eaia06w7v6w1z0ezon5dg61ac 192.168.100.90:2377
 ```
 
-
-4) Deploy your services to the swarm at your manager node(main computer). Make sure that your terminal is at `cst435-assignment2` directory now.
-
-```
-docker stack deploy -c docker-compose.yaml hadoop-stack
-```
-
-5) Get the `namenode` container name by using the comman below.
-
-```
-docker ps
-```
-
-Note:
-hadoop-stack is the stack name
-
-6) Exec into `namenode` container
-
-```
-docker exec -it <namenode-container-name> /bin/bash
-```
-
-
-7) run the mapreduce code inside your `namenode` container
-```
-yarn jar share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.6.jar pi 10 15
-```
-
-### Scale the datanode
-What you have done so far is one computer one node. Now you can scale the datanode for multiprocessing. 
-
-1) Exit from the `namenode` terminal.
-
-```
-exit
-```
-
-2) Scale the number of datanode to 3(any number you prefer) make sure that you put the datanode-service name.
-
-Get the `datanode-service-name`
-```
-docker stack services <stack-name>
-```
-
-Scale the `datanode` to 3
-```
-docker service scale <datanode-service-name>=3
-```
-
-example of  <datanode-service-name>: `hadoop-stack_datanode`
-example of  <stack-name>: `hadoop-stack`
-
-3) Repeat the same code for exec into `namenode` and run the `mapreduce` program. You should see the difference in the time taken.
-
-```
-docker exec -it <namenode-container-name> /bin/bash
-yarn jar share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.6.jar pi 10 15
-```
-
-note: You can change the value of 10 and 15 accordingly.
-
-### Shut Down the Swarm
-After you have run all the codes successfully, make sure you shut down your swarm before creating a new swarm.
-
-```
-docker swarm leave (for worker node)
-docker swarm leave --force  (for manager node)
-```
-
-### Issue Faced
-
-The code above have one problem which is it cannot connect to multicomputer as the network is unreachable.
-```
-docker swarm Error response from daemon: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing dial tcp 192.168.65.3:2377: connect: network is unreachable
-```
-
-one possible reason is `firewall`, can refer the section below to solve this firewall issue.
-
-#### Firewall problem if cannot join swarm node
+##### Firewall problem if cannot join swarm node
 
 1) Run the code below if you cannot join the swarm in VM/ other computers
 
@@ -216,27 +236,365 @@ systemctl reboot -i
 
 Notes: the last command will restart your computer, make sure you save all of your works before run it.
 
-Still pending to solve this problem.
-### Result Comparison in one single computer but different number of datanode
+#### Prepare the Environment
 
-You may do the result comparison with the setup below.
+Execute the command below in ALL VMs.
+Pull the docker image
+```
+docker pull newnius/hadoop:2.7.4
+```
 
-1) Single Computer, Single Node
+create dir `/data`
+```
+sudo mkdir -p /data
+sudo chmod 777 /data
 
-Run the mapreduce program using single computer single datenode
+```
 
-2) Single Computer, Multi Node
+create dir for data persist inside `/data`
+```
+mkdir -p /data/hadoop/hdfs/
+mkdir -p /data/hadoop/logs/
+```
 
-Run the mapreduce program using single computer and scale the datanodes
+#### Configure Hadoop
 
-3) Multi Computer, Single Node (Pending to be solved)
+Create a directory named `"config"` and copy paste five configuration files beneath it. 
 
-Run the mapreduce program using multi computer single datenode
+```
+config/
+|-------core-site.xml
+|-------hdsf-site.xml
+|-------mapred-site.xml
+|-------slaves
+|-------yarn-site.xml
+```
 
-4) Multi Computer, Multi Node (Pending to be solved)
+Copy and Paste the contents below for these 5 configuration files.
 
-Run the mapreduce program using multi computer and scale the datanodes
+`core-site.xml`
 
+```
+<?xml version="1.0" encoding="UTF-8"?> 
+
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?> 
+
+<!-- Put site-specific property overrides in this file. --> 
+
+<configuration> 
+
+    <property>        
+
+        <name>fs.defaultFS</name> 
+
+        <value>hdfs://hadoop-node021:8020</value> 
+
+    </property> 
+
+    <property> 
+
+        <name>fs.default.name</name> 
+
+        <value>hdfs://hadoop-node021:8020</value> 
+
+    </property> 
+
+</configuration> 
+```
+
+`hdsf-site.xml`
+
+```
+<?xml version="1.0" encoding="UTF-8"?> 
+
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?> 
+
+<!-- Put site-specific property overrides in this file. --> 
+
+<configuration> 
+
+    <property> 
+
+        <name>dfs.permissions</name> 
+
+        <value>false</value> 
+
+    </property> 
+
+    <property> 
+
+        <name>dfs.namenode.http-address</name> 
+
+        <value>hadoop-node021:50070</value> 
+
+    </property> 
+
+    <property> 
+
+        <name>dfs.namenode.secondary.http-address</name> 
+
+        <value>hadoop-node022:50090</value> 
+
+    </property>  
+
+    <property>    
+
+        <name>dfs.datanode.max.transfer.threads</name>    
+
+        <value>8192</value>     
+
+    </property> 
+
+    <property> 
+
+        <name>dfs.replication</name> 
+
+        <value>3</value> 
+
+    </property> 
+
+</configuration> 
+```
+
+`mapred-site.xml`
+
+```
+<?xml version="1.0"?> 
+
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?> 
+
+<!-- Put site-specific property overrides in this file. --> 
+
+<configuration> 
+
+    <property>                       
+
+        <name>mapreduce.framework.name</name> 
+
+        <value>yarn</value> 
+
+    </property> 
+
+    <property> 
+
+        <name>mapreduce.jobhistory.address</name> 
+
+        <value>hadoop-node021:10020</value> 
+
+    </property> 
+
+    <property> 
+
+        <name>mapreduce.jobhistory.webapp.address</name> 
+
+        <value>hadoop-node021:19888</value> 
+
+    </property>  
+
+</configuration> 
+```
+
+`yarn-site.xml`
+
+```
+<?xml version="1.0"?> 
+
+<!-- Site specific YARN configuration properties --> 
+
+<configuration> 
+
+    <property> 
+
+        <name>yarn.application.classpath</name> 
+
+        <value>/usr/local/hadoop/etc/hadoop, /usr/local/hadoop/share/hadoop/common/*, /usr/local/hadoop/share/hadoop/common/lib/*, /usr/local/hadoop/share/hadoop/hdfs/*, /usr/local/hadoop/share/hadoop/hdfs/lib/*, /usr/local/hadoop/share/hadoop/mapreduce/*, /usr/local/hadoop/share/hadoop/mapreduce/lib/*, /usr/local/hadoop/share/hadoop/yarn/*, /usr/local/hadoop/share/hadoop/yarn/lib/*</value> 
+
+    </property> 
+
+    <property> 
+
+        <name>yarn.resourcemanager.hostname</name> 
+
+        <value>hadoop-node021</value> 
+
+    </property> 
+
+    <property> 
+
+        <name>yarn.nodemanager.aux-services</name> 
+
+        <value>mapreduce_shuffle</value> 
+
+    </property> 
+
+    <property> 
+
+        <name>yarn.log-aggregation-enable</name> 
+
+        <value>true</value> 
+
+    </property> 
+
+    <property> 
+
+        <name>yarn.log-aggregation.retain-seconds</name> 
+
+        <value>604800</value> 
+
+    </property> 
+
+    <property> 
+
+        <name>yarn.nodemanager.resource.memory-mb</name> 
+
+        <value>2048</value> 
+
+    </property> 
+
+    <property> 
+
+        <name>yarn.nodemanager.resource.cpu-vcores</name> 
+
+        <value>2</value> 
+
+    </property> 
+
+    <property> 
+
+        <name>yarn.scheduler.minimum-allocation-mb</name> 
+
+        <value>1024</value> 
+
+    </property> 
+
+</configuration> 
+```
+
+`slaves`
+
+```
+hadoop-node022 
+
+hadoop-node023 
+```
+
+Note: Using `nano` command in the terminal to insert all these codes, subject to change for the number of hadoop-node based on the "alias" set in the environment.
+
+#### Distribute all these files across the nodes by manually repeating the step above
+
+If you have 3 nodes, repeat the step above 3 times.
+
+#### Bring up the nodes of Hadoop
+
+Execute the command below at `master/manager node` for this case is `tehtehv2-virtual-machine` to bring up all the nodes.
+
+
+Repeat this process `N` times as you have `N` nodes (3 times in our case) 
+
+```
+docker service create \
+        --name {{ Alias }} \
+        --hostname {{ Alias }} \
+        --constraint node.hostname=={{ Hostname }} \
+        --network hadoop-net \
+        --endpoint-mode dnsrr \
+        --mount type=bind,src={{HOME}}/data/hadoop/config,dst=/config/hadoop \
+        --mount type=bind,src={{HOME}}/data/hadoop/hdfs,dst=/tmp/hadoop-root \
+        --mount type=bind,src={{HOME}}/data/hadoop/logs,dst=/usr/local/hadoop/logs \
+        newnius/hadoop:2.7.4
+```
+Note: Change the `{{Alias}}`, `{{Hostname}}` and `{{HOME}}` according to your node.
+
+Example:
+
+```
+docker service create \ 
+        --name hadoop-node021 \ 
+        --hostname hadoop-node021 \ 
+        --constraint node.hostname==tehtehv2-virtual-machine \ 
+        --network hadoop-net \ 
+        --endpoint-mode dnsrr \ 
+        --mount type=bind,src=/home/tehteh-v2/data/hadoop/config,dst=/config/hadoop \ 
+        --mount type=bind,src=/home/tehteh-v2/data/hadoop/hdfs,dst=/tmp/hadoop-root \ 
+        --mount type=bind,src=/home/tehteh-v2/data/hadoop/logs,dst=/usr/local/hadoop/logs \ 
+        newnius/hadoop:2.7.4 
+```
+
+```
+docker service create \ 
+        --name hadoop-node022 \ 
+        --hostname hadoop-node022 \ 
+        --constraint node.hostname==tehteh22v3-virtual-machine \ 
+        --network hadoop-net \ 
+        --endpoint-mode dnsrr \ 
+        --mount type=bind,src=/home/tehteh22v3/data/hadoop/config,dst=/config/hadoop \ 
+        --mount type=bind,src=/home/tehteh22v3/data/hadoop/hdfs,dst=/tmp/hadoop-root \ 
+        --mount type=bind,src=/home/tehteh22v3/data/hadoop/logs,dst=/usr/local/hadoop/logs \ 
+        newnius/hadoop:2.7.4 
+```
+
+```
+docker service create \ 
+        --name hadoop-node023 \ 
+        --hostname hadoop-node023 \ 
+        --constraint node.hostname==tehteh22v4-virtual-machine \ 
+        --network hadoop-net \ 
+        --endpoint-mode dnsrr \ 
+        --mount type=bind,src=/home/tehteh22v4/data/hadoop/config,dst=/config/hadoop \ 
+        --mount type=bind,src=/home/tehteh22v4/data/hadoop/hdfs,dst=/tmp/hadoop-root \ 
+        --mount type=bind,src=/home/tehteh22v4/data/hadoop/logs,dst=/usr/local/hadoop/logs \ 
+        newnius/hadoop:2.7.4 
+```
+
+#### Start Hadoop Services
+
+Execute the command below on `tehtehv2-virtual-machine` to enter `master node`
+
+```
+docker exec -it hadoop-node021.1.$(docker service ps \
+hadoop-node021 --no-trunc | grep Running | awk '{print $1}' ) bash
+```
+
+Now we will execute the following commands inside the master node
+
+#### Format master node for first time running
+
+```
+# stop all Hadoop processes
+sbin/stop-yarn.sh
+sbin/stop-dfs.sh
+
+# format namenode
+bin/hadoop namenode -format
+
+# start yarn and dfs nodes
+sbin/start-dfs.sh
+sbin/start-yarn.sh
+```
+
+#### Run MapReduce Program for π Calculation
+
+```
+bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.4.jar pi 100 150
+```
+
+You should see the result after executing the command above.
+
+Congratulations, now you have successfully run Hadoop on Multi Computer Multi Nodes.
+
+### Shut Down the Swarm after you finish running the code
+After you have run all the codes successfully, make sure you shut down your swarm before creating a new swarm.
+
+Execute the command below on all the nodes that have join swarm. 
+```
+docker swarm leave (for worker node)
+docker swarm leave --force  (for manager node)
+```
+
+
+### Result Comparison
+
+You can scale the number of nodes and VMs to make the comparison. You may also change the parameter of `Number of Maps` and `Samples per Map` with different value to see the difference.
 
 Example of Comparison:
 
@@ -245,11 +603,11 @@ yarn jar share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.6.jar pi 100 150
 Number of Maps  = 100
 Samples per Map = 150
 
-single computer with only one datanode
+single computer with multi nodes
 Job Finished in 123.303 seconds
 Estimated value of Pi is 3.14160000000000000000
 
-single computer with three datanodes
+multi computer with multi nodes
 Job Finished in 97.229 seconds
 Estimated value of Pi is 3.14160000000000000000
 ```

@@ -200,7 +200,7 @@ docker network create --driver overlay hadoop-net
 
 output
 ```
-docker swarm join --token SWMTKN-1-5f4g4cbo8fdldw98a3hmhf8s12qe6ffx6s2sbluyyihpp5m3bg-eaia06w7v6w1z0ezon5dg61ac 192.168.100.90:2377
+docker swarm join --token <token-generated> 192.168.100.90:2377
 ```
 
 ##### add other VM as worker nodes
@@ -208,7 +208,7 @@ docker swarm join --token SWMTKN-1-5f4g4cbo8fdldw98a3hmhf8s12qe6ffx6s2sbluyyihpp
 use the output from docker swarm join to join as work nodes on other VMs. 
 
 ```
-docker swarm join --token SWMTKN-1-5f4g4cbo8fdldw98a3hmhf8s12qe6ffx6s2sbluyyihpp5m3bg-eaia06w7v6w1z0ezon5dg61ac 192.168.100.90:2377
+docker swarm join --token <token-generated> 192.168.100.90:2377
 ```
 
 ##### Firewall problem if cannot join swarm node

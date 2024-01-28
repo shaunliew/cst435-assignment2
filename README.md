@@ -3,11 +3,11 @@
 ## Team Members
 
 ```
-Shaun Liew Xin Hong
-Liew Hui Lek
-Teh Zhen Jun
-Poh Chyi Yi
-Eng Jia Ying
+Teh Zhen Jun (153566)
+Shaun Liew Xin Hong (154746)
+Liew Hui Lek (151496)
+Eng Jia Ying (153684)
+Poh Chyi Yi (153485)
 ```
 
 ## How to run this project
